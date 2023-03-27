@@ -1,10 +1,11 @@
 cmake_minimum_required(VERSION 3.10)
 project(opencv_calibration)
 
+set(GUI_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/include})
 set(CMAKE_CXX_STANDARD 14)
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread")
 
-add_executable(opencv_calibration calibration.cpp)
+add_executable(opencv_calibration main.cpp)
 
 FIND_PACKAGE(OpenCV REQUIRED)
 FIND_PACKAGE(OpenGL REQUIRED)
@@ -13,5 +14,6 @@ FIND_PACKAGE(GLUT REQUIRED)
 INCLUDE_DIRECTORIES(${OpenCV_INCLUDE_DIRS})
 INCLUDE_DIRECTORIES(${OpenGL_INCLUDE_DIRS})
 INCLUDE_DIRECTORIES(${GLUT_INCLUDE_DIRS})
+INCLUDE_DIRECTORIES(${GUI_INCLUDE_DIRS})
 
 TARGET_LINK_LIBRARIES(opencv_calibration ${OpenCV_LIBRARIES} ${OPENGL_LIBRARIES} ${GLUT_LIBRARY})
