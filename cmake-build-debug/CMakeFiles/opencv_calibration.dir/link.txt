@@ -1,0 +1,1 @@
+/usr/bin/c++  -g   CMakeFiles/opencv_calibration.dir/main.cpp.o  -o opencv_calibration 
