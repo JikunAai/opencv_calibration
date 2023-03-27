@@ -4,7 +4,7 @@ project(opencv_calibration)
 set(CMAKE_CXX_STANDARD 14)
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread")
 
-add_executable(opencv_calibration correction.cpp)
+add_executable(opencv_calibration calibration.cpp)
 
 FIND_PACKAGE(OpenCV REQUIRED)
 FIND_PACKAGE(OpenGL REQUIRED)
