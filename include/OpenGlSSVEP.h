@@ -183,9 +183,9 @@ void SSVEP_BLOCK()
 
     //OpenGL2OpenCV coordinate transform;
     //cout<<"x,:  "<<x<<"  count:  "<<miss<<endl;
-    x_0 = x/640*0.75-0.75;
+    x_0 = x/1280*0.75-0.75;
 /*    cout<<"x,:  "<<x_0<<"  count:  "<<rsizex<<endl;*/
-    y_0 = -y/480+1;
+    y_0 = -y/960+1;
     y_0 = y_0 - inter_sizey;
 
     //Set block;
@@ -200,6 +200,25 @@ void SSVEP_BLOCK()
 /*    glColor3f(R[4], R[4], R[4]);
     glRectf(x_0 - rsizex/2, y_0 + rsizey/2, x_0 + rsizex/2, y_0 - rsizey/2);*/
 
+    // 1. 设置白色 , glVertex3f (GLfloat x, GLfloat y, GLfloat z)
+    glColor3f(1, 1, 0);
+    glRectf(double(double(pos-150)/1280.0), double(double(pos-152)/960.0),
+            double(double(pos+150)/1280.0), double(double(pos-148)/960.0));
+
+    glColor3f(1, 1, 0);
+    glRectf(double(double(pos-152)/1280), double(double(pos-150)/960),
+            double(double(pos-148)/1280), double(double(pos+150)/960));
+
+    glColor3f(1, 1, 0);
+    glRectf(double(double(pos+152)/1280), double(double(pos-150)/960),
+            double(double(pos+148)/1280), double(double(pos+150)/960));
+
+    glColor3f(1, 1, 0);
+    glRectf(double(double(pos-150)/1280), double(double(pos+152)/960),
+            double(double(pos+150)/1280), double(double(pos+148)/960));
+
+/*    glRectf((300+pos)/1280, (300+pos)/960, 300/1280, 300/960);*/
+    cout<<"x,:  "<<pos<<endl;
     //Set light
     glEnable(GL_LIGHTING);
     glLightfv(GL_LIGHT0, GL_POSITION, gLightPos);
@@ -352,6 +371,7 @@ int TCP()
             printf("recv client data: %s\n", recvbuf);
             prob = stod(recvbuf);
             printf("recv client data: %f\n",prob);
+            pos = prob;
         }else if(lens==0)
         {//表示客户端断开连接
 /*            printf("client closed...");*/
