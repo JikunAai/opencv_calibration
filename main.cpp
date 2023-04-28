@@ -58,8 +58,9 @@ double prob;
 //static mutex cam_mutex;
 vector<cv::Point2f> objsC; // object pos in rgb
 int target = 1; // target from ros
-int targetT = 1; //targetT
-int inArea = 0; // in area?
+int targetT; //targetT
+int inArea = 1; // in area?
+int inSemiArea = 1;
 // 跟踪窗口宽度和高度的变化
 GLfloat windowWidth;
 GLfloat windowHeight;
@@ -206,7 +207,7 @@ void TimerFunction(int value)
     glutTimerFunc(8,TimerFunction, value);
 }
 
-void ChangeSize(int w, int h, VideoCapture cap)
+void inChangeSize(int w, int h, VideoCapture cap)
 {
     //-------------------------------------------------------------------------------
     // 当窗口改变大小时由GLUT函数库调用
@@ -295,7 +296,9 @@ int TCP_Client()
         //从客户端接受消息
         len2=recv(client_sockfd,(char *)&targetT,sizeof(targetT),0);
         inArea = targetT % 10;
-        target = int(targetT / 10);
+
+        inSemiArea = int(targetT / 100);
+        target = int(targetT % 100 / 10);
         if(len2 > 0){
             recv_buf[len2]='\0';
             cout<<"Received target："<<targetT<<" ，Info Length："<<len2<<endl;
@@ -310,6 +313,7 @@ void detect()
 {
     int green;
     int red;
+
     Mat gCameraCorr;
     gFinished = 0;
     while(!gFinished)
@@ -346,18 +350,25 @@ void detect()
                 }
             }
         }
-        if (inArea == 1)
+        if (inArea == 2 && inSemiArea == 1)
+        {
+            red = 0;
+            green = 255;
+
+
+        }
+        else if (inArea == 1 && inSemiArea == 2)
+        {
+            red = 255;
+            green = 255;
+
+        }
+        else
         {
             red = 255;
             green = 0;
 
         }
-        else
-        {
-            red = 0;
-            green = 255;
-        }
-
         x = center.x;
         y = center.y;
         circle(gCameraCorr, Point(int(center.x),int(center.y)), (int)2, Scalar(255, 0, 0), 2);
