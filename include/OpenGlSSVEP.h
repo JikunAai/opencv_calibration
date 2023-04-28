@@ -22,6 +22,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <arpa/inet.h>
+#include <sstream>
+
 
 using namespace cv;
 using namespace std;
@@ -72,55 +74,9 @@ void glInit(int argc, char* argv[]) {
     glutCreateWindow("Bounce");
 }
 
-void detect(VideoCapture capture, Mat cameraMatrix, Mat distCoeffs)
-{
-    Mat gCameraCorr;
-    gFinished = 0;
-    while(!gFinished)
-    {
 
-        capture>>gCameraImage;
-        gCameraCorr = correction(cameraMatrix, distCoeffs, gCameraImage);
-        //cam_mutex.lock();
-        k++;
-        vector<std::vector<Point>> contours;
-        vector<Vec4i> hireachy;
-        Point2f center;
-        float radius = 5;
-        vector<Mat> hsvSplit;   //创建向量容器，存放HSV的三通道数据
-        cvtColor(gCameraCorr, imgHSV, COLOR_BGR2HSV); //Convert the captured frame from BGR to HSV
-        split(imgHSV, hsvSplit);			//分类原图像的HSV三通道
-        equalizeHist(hsvSplit[2], hsvSplit[2]);    //对HSV的亮度通道进行直方图均衡
-        merge(hsvSplit, imgHSV);				   //合并三种通道
-        cvtColor(imgHSV, imgBGR, COLOR_HSV2BGR);    //将HSV空间转回至RGB空间，为接下来的颜色识别做准备
-        //inRange(imgBGR, Scalar(0, 128, 128), Scalar(127, 255, 255), imgThresholded); //yellow
-        inRange(imgBGR, Scalar(120, 180, 0), Scalar(255, 255, 130), imgThresholded); //green
-        Mat element = getStructuringElement(MORPH_RECT, Size(5, 5));
-        morphologyEx(imgThresholded, imgThresholded, MORPH_OPEN, element);
-        findContours(imgThresholded, contours, hireachy, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE, Point(0, 0));
-        //Choose the biggest area as target.
-        if (!contours.empty()) {
-            double maxArea = 0;
-            for (int i = 0; i < contours.size(); i++) {
-                double area = contourArea(contours[static_cast<int>(i)]);
-                if (area > maxArea) {
-                    maxArea = area;
-                    minEnclosingCircle(contours[static_cast<int>(i)], center, radius);//get center;
-                }
-            }
-        }
-        x = center.x;
-        y = center.y;
 
-        circle(gCameraCorr, Point(int(center.x),int(center.y)), (int)2, Scalar(255, 0, 0), 2);
-        gResultImage = gCameraCorr;
-        waitKey(5);
-        //cam_mutex.unlock();
-    }
-
-}
-
-void updateTexture() {
+void updateTexture(Mat gResultImage) {
     //-------------------------------------------------------------------------------
     //Update texture from camera;
     glBindTexture(GL_TEXTURE_2D, gCameraTextureId);
@@ -134,7 +90,7 @@ void updateTexture() {
                  GL_UNSIGNED_BYTE, gResultImage.data);
 }
 
-void SSVEP_BLOCK()
+void SSVEP_BLOCK(Mat gResultImage)
 {
     rsizex = rsize / 1920;
     rsizey = rsize / 1080;
@@ -143,7 +99,7 @@ void SSVEP_BLOCK()
     miss++;
     //-------------------------------------------------------------------------------
     //Draw SSVEP_BLOCK;
-    updateTexture();
+    updateTexture(gResultImage);
     glClear(GL_COLOR_BUFFER_BIT);
     glutPostRedisplay();
 
@@ -182,10 +138,10 @@ void SSVEP_BLOCK()
     glDisable(GL_TEXTURE_2D);
 
     //OpenGL2OpenCV coordinate transform;
-    //cout<<"x,:  "<<x<<"  count:  "<<miss<<endl;
-    x_0 = x/1280*0.75-0.75;
-/*    cout<<"x,:  "<<x_0<<"  count:  "<<rsizex<<endl;*/
-    y_0 = -y/960+1;
+    cout<<"x,:  "<<x<<"  count:  "<<miss<<endl;
+    x_0 = x/1920*0.75-0.75;
+    cout<<"x,:  "<<x_0<<"  count:  "<<rsizex<<endl;
+    y_0 = -y/1080+1;
     y_0 = y_0 - inter_sizey;
 
     //Set block;
@@ -218,7 +174,7 @@ void SSVEP_BLOCK()
             double(double(pos+150)/1280), double(double(pos+148)/960));
 
 /*    glRectf((300+pos)/1280, (300+pos)/960, 300/1280, 300/960);*/
-    cout<<"x,:  "<<pos<<endl;
+/*    cout<<"x,:  "<<pos<<endl;*/
     //Set light
     glEnable(GL_LIGHTING);
     glLightfv(GL_LIGHT0, GL_POSITION, gLightPos);
@@ -264,7 +220,7 @@ void ChangeSize(int w, int h, VideoCapture cap)
     cap.set(CAP_PROP_FRAME_WIDTH, windowWidth);
     cap.set(CAP_PROP_FRAME_HEIGHT, windowHeight);
 
-    // 防止被 0 所除
+    // 防止被 0 所, cameraMatrix, distCoeffs除
     if(h == 0)
         h = 1;
 
@@ -302,89 +258,7 @@ void glut_go()
     glutMainLoop();
 }
 
-//TCP通信服务端
-int TCP()
-{
-    //1.创建socket(用于监听的套接字)
-    int lfd = socket(AF_INET, SOCK_STREAM, 0);
 
-    if(lfd==-1)
-    {
-        perror("socket");
-        exit(-1);
-    }
-
-    //2.绑定
-    struct sockaddr_in saddr;
-    saddr.sin_family = PF_INET;
-    saddr.sin_addr.s_addr = INADDR_ANY; //0.0.0.0
-    saddr.sin_port = htons(9999);
-    int ret = bind(lfd, (struct sockaddr *)&saddr, sizeof(saddr));
-
-    if(ret == -1)
-    {
-        perror("bind");
-        exit(-1);
-    }
-
-    //3.监听
-    listen(lfd, 5);
-    if(ret==-1)
-    {
-        perror("listen");
-        exit(-1);
-    }
-
-    //4.接受客户端连接
-    struct sockaddr_in caddr;
-    socklen_t len = sizeof(caddr);
-    int cfd = accept(lfd, (struct sockaddr *)&caddr, &len);
-    if(cfd==-1)
-    {
-        perror("accept");
-        exit(-1);
-    }
-
-    //输出客户端的信息
-    char cip[16];
-    inet_ntop(AF_INET, &caddr.sin_addr.s_addr, cip, sizeof(cip));
-    unsigned short cport = ntohs(caddr.sin_port);
-    printf("client ip is %s,port is %d\n", cip, cport);
-
-    //5.
-    //获取客户端的数据
-    char recvbuf[1024] = {0};
-
-    //给客户端发送数据,position
-    char *data = "hello ,i am server";
-    write(cfd, data, strlen(data));
-
-    while(1)
-    {
-        int lens = read(cfd, recvbuf, sizeof(recvbuf));
-        if(lens==-1)
-        {
-            perror("read");
-            exit(-1);
-        }else if(lens>0)
-        {
-            printf("recv client data: %s\n", recvbuf);
-            prob = stod(recvbuf);
-            printf("recv client data: %f\n",prob);
-            pos = prob;
-        }else if(lens==0)
-        {//表示客户端断开连接
-/*            printf("client closed...");*/
-            break;
-        }
-    }
-
-    //关闭文件描述符
-
-    close(lfd);
-    close(cfd);
-
-}
 
 
 #endif //OPENCV_CALIBRATION_OPENGLSSVEP_H
